@@ -24,11 +24,6 @@ def create_mesh(key, geometry_data, color_code, return_mesh=False):
 
         mesh.transform(matrices.rotation_matrix)
 
-        # Create the bevel_weight_edge attribute
-        if ImportOptions.bevel_edges:
-            if "bevel_weight_edge" not in mesh.attributes:
-                mesh.attributes.new(name="bevel_weight_edge", type='FLOAT', domain='EDGE')
-
     return mesh
 
 
@@ -182,9 +177,12 @@ def __process_mesh_sharp_edges(mesh, geometry_data):
         # so we can assign bevel weights by index.
         bevel_attr_data = None
         if ImportOptions.bevel_edges:
-            # The attribute should have been created in create_mesh
-            if "bevel_weight_edge" in mesh.attributes:
-                bevel_attr_data = mesh.attributes["bevel_weight_edge"].data
+            if bpy.app.version < (4, 3):
+                pass
+            else:
+                if "bevel_weight_edge" not in mesh.attributes:
+                    mesh.attributes.new(name="bevel_weight_edge", type='FLOAT', domain='EDGE')
+                bevel_attr_data = mesh.attributes["bevel_weight_edge"]
 
         # we need i for indexing
         # Original code was: for edge in mesh.edges:
@@ -197,9 +195,14 @@ def __process_mesh_sharp_edges(mesh, geometry_data):
                     edge.use_edge_sharp = True
                 if ImportOptions.use_freestyle_edges:
                     edge.use_freestyle_mark = True
-                if ImportOptions.bevel_edges and bevel_attr_data is not None:
-                    # Instead of using edge.bevel_weight, we now assign the value to the attribute
-                    bevel_attr_data[i].value = ImportOptions.bevel_weight
+
+                if ImportOptions.bevel_edges:
+                    if bpy.app.version < (4, 3):
+                        edge.bevel_weight = ImportOptions.bevel_weight
+                    else:
+                        if bevel_attr_data is not None:
+                            # Instead of using edge.bevel_weight, we now assign the value to the attribute
+                            bevel_attr_data.data[i].value = ImportOptions.bevel_weight
 
 
 def __process_mesh(mesh):

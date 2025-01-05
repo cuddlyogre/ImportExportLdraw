@@ -97,7 +97,7 @@ class ImportOptions:
     defaults["bevel_edges"] = False
     bevel_edges = defaults["bevel_edges"]
 
-    defaults["bevel_weight"] = 0.3
+    defaults["bevel_weight"] = 0.03
     bevel_weight = defaults["bevel_weight"]
 
     defaults["bevel_width"] = 0.3
