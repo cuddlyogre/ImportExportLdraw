@@ -206,9 +206,10 @@ def __process_mesh_sharp_edges(mesh, geometry_data):
 
 
 def __process_mesh(mesh):
-    if ImportOptions.smooth_type_value() == "auto_smooth" or ImportOptions.smooth_type_value() == "bmesh_split":
-        mesh.use_auto_smooth = ImportOptions.shade_smooth
-        mesh.auto_smooth_angle = matrices.auto_smooth_angle
+    if bpy.app.version < (4, 1):
+        if ImportOptions.smooth_type_value() == "auto_smooth" or ImportOptions.smooth_type_value() == "bmesh_split":
+            mesh.use_auto_smooth = ImportOptions.shade_smooth
+            mesh.auto_smooth_angle = matrices.auto_smooth_angle
     # scale here so edges can be marked sharp
     __scale_mesh(mesh)
 

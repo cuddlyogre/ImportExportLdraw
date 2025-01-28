@@ -7,7 +7,7 @@ from . import strings
 from . import ldraw_props
 from . import ldraw_meta
 from . import matrices
-
+from pathlib import Path
 
 top_empty = None
 gap_scale_empty = None
@@ -37,7 +37,38 @@ def create_object(mesh, geometry_data, color_code, matrix, collection):
     ldraw_meta.do_meta_step(obj)
     __link_obj_to_collection(obj, collection)
 
+    if bpy.app.version < (4, 1):
+        ...
+    else:
+        if ImportOptions.smooth_type_value() == "auto_smooth" or ImportOptions.smooth_type_value() == "bmesh_split":
+            add_smooth_by_angle_modifier(obj)
+
     return obj
+
+# found here: https://projects.blender.org/blender/blender/issues/117399#issuecomment-1167467
+def get_internal_asset_path():
+    for path_type in ("LOCAL", "SYSTEM", "USER"):
+        path = Path(bpy.utils.resource_path(path_type)) / "datafiles" / "assets"
+        if path.exists():
+            return path
+    assert False
+
+SMOOTH_BY_ANGLE_ASSET_PATH = str(get_internal_asset_path() / "geometry_nodes" / "smooth_by_angle.blend")
+SMOOTH_BY_ANGLE_NODE_GROUP_NAME = "Smooth by Angle"
+
+def add_smooth_by_angle_modifier(obj):
+    global SMOOTH_BY_ANGLE_NODE_GROUP_NAME
+
+    smooth_by_angle_node_group = bpy.data.node_groups.get(SMOOTH_BY_ANGLE_NODE_GROUP_NAME)
+    if not smooth_by_angle_node_group or smooth_by_angle_node_group.type != "GEOMETRY":
+        with bpy.data.libraries.load(SMOOTH_BY_ANGLE_ASSET_PATH) as (data_from, data_to):
+            data_to.node_groups = [SMOOTH_BY_ANGLE_NODE_GROUP_NAME]
+        smooth_by_angle_node_group = data_to.node_groups[0]
+        SMOOTH_BY_ANGLE_NODE_GROUP_NAME = smooth_by_angle_node_group.name
+
+    modifier = obj.modifiers.new("Smooth by Angle", "NODES")
+    modifier.node_group = smooth_by_angle_node_group
+    modifier["Input_1"] = matrices.auto_smooth_angle
 
 
 def create_edge_obj(mesh, geometry_data, color_code, obj, collection):
